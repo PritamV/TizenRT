@@ -1,0 +1,15 @@
+#
+# For a description of the syntax of this configuration file,
+# see kconfig-language at https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt
+#
+
+config EXAMPLE_AIENABLER_TEST
+	bool "aienabler test example"
+	default n
+	select ENABLE_CURL
+	---help---
+		Enable the aienabler
+
+config USER_ENTRYPOINT
+	string
+	default "aienabler_main" if ENTRY_EXAMPLE_AIENABLER_TEST

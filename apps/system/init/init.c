@@ -55,6 +55,12 @@
 #ifdef CONFIG_WIFI_MANAGER
 #include <tinyara/wifi/wifi_manager.h>
 #endif
+
+#define CONFIG_AIENABLER // TODO this needs to defined at its proper  place
+#ifdef CONFIG_AIENABLER
+#include <aienabler/aienabler.h>
+#endif
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -182,6 +188,14 @@ int preapp_start(int argc, char *argv[])
 
 #if defined(CONFIG_WIFI_MANAGER)
 	(void)wifimgr_run_msghandler();
+#endif
+
+#if defined(CONFIG_AIENABLER)
+       if (aienabler_init() < 0) 
+       {
+	   printf("aienabler_init initialization is failed, error %d\n", ret);
+       }
+
 #endif
 /***********************************************************************************
  *	current preapp_start does the up_cxxinitialize which initializes the
