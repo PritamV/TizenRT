@@ -30,6 +30,9 @@
 #include <curl/curl.h>
 #include <aienabler/aienabler_log.h>
 
+CURL* hnd = NULL;
+struct curl_slist* slist1 = NULL;
+
 #ifdef __cplusplus
 extern "C"
 {

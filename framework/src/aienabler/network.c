@@ -23,8 +23,12 @@
 #include <aienabler/network.h>
 #include <aienabler/wifistate.h>
 
-void ChkNetwork(void)
-{	
+#define AIENABLER_TASH_PRI      100
+#define AIENABLER_TASH_STAKSIZE 10240
+#define AIENABLER_SCHED_POLICY  SCHED_RR
+
+void NetworkEventNotification(void)
+{
 	int listener = socket(AF_LWNL, SOCK_RAW, LWNL_ROUTE);
 	if (listener < 0)
 	{
@@ -37,52 +41,104 @@ void ChkNetwork(void)
 	{
 		AIENABLER_LOG_ERROR("[AIENABLER] bind error\n");
 		AIENABLER_ERR;
-	} 	
+	}
 
-	fd_set fds, readfds;
+	fd_set readfds, fds;
 	FD_ZERO(&fds);
-	FD_SET(listener, &fds);
-	int fdmax = listener;
+	FD_SET(listener, &fds);	
+	pthread_t threadfetchCloudData;
+	pthread_attr_t attr;
+	struct sched_param sparam;
+	struct input_arg args;
+	int status;
+
 	bool flag = true;
 	while (flag)
 	{
 		readfds = fds;
 		// monitor readfds for readiness for reading
-		if (select(fdmax + 1, &readfds, NULL, NULL, NULL) == -1)
+		if (select(listener + 1, &readfds, NULL, NULL, NULL) == -1)
 		{
 			AIENABLER_LOG_ERROR("[AIENABLER] select error");
 			AIENABLER_ERR;
 			flag = false;
 		}
-		
-		for (int fd = 0; fd < (fdmax + 1); fd++)  
+
+		if (FD_ISSET(listener, &readfds)) // fd is ready for reading
 		{
-			if (FD_ISSET(listener, &readfds)) // fd is ready for reading
+			lwnl_cb_status status;
+			uint32_t len;
+			char type_buf[8] = { 0, };
+			int nbytes = read(fd, (char*)type_buf, 8);
+			if (nbytes < 0)
 			{
-				if (fd == listener)
+				AIENABLER_LOG_ERROR("[AIENABLER] - Failed to receive (nbytes=%d) from select read\n", nbytes);
+				AIENABLER_ERR;
+				flag = false;
+				break;
+			}
+			memcpy(&status, type_buf, sizeof(lwnl_cb_status));
+			memcpy(&len, type_buf + sizeof(lwnl_cb_status), sizeof(uint32_t));
+			AIENABLER_LOG_INFO("[AIENABLER] scan state(% d) length(% d)\n", status, len);
+			
+			setwificonnectionstate(status);
+
+			if(wificonnectionState)
+			{
+				sleep(5);
+				AIENABLER_LOG_INFO("[AIENABLER] fetchDataFromCloud\n");				
+				/* Initialize the attribute variable */
+				status = pthread_attr_init(&attr);
+				if (status != 0) {					
+					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_attr_init failed, status=%d\n", status);
+				}
+
+				/* 1. set a priority */
+				sparam.sched_priority = AIENABLER_TASH_PRI;
+				status = pthread_attr_setschedparam(&attr, &sparam);
+				if (status != 0) 
+				{					
+					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_attr_setschedparam failed, status=%d\n",status);
+				}
+
+				/* 2. set a stacksize */
+				status = pthread_attr_setstacksize(&attr, AIENABLER_TASH_STAKSIZE);
+				if (status != 0) 
+				{					
+					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_attr_setstacksize failed, status=%d\n",status);
+				}
+
+				/* 3. set a sched policy */
+				status = pthread_attr_setschedpolicy(&attr, CURL_SCHED_POLICY);
+				if (status != 0) 
+				{					
+					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_attr_setschedpolicy failed, status=%d\n", status);
+				}
+
+				/* 4. create pthread with entry function */
+				status = pthread_create(&threadfetchCloudData, &attr, fetchdatafromdacloud, NULL);
+				if (status != 0) 
+				{					
+					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_create failed, status=%d\n", status);
+				}								
+			}
+			else // stop polling
+			{
+				if (pthread_cancel(threadfetchCloudData) != 0)
 				{
-					lwnl_cb_status status;
-					uint32_t len;
-					char type_buf[8] = { 0, };
-					int nbytes = read(fd, (char*)type_buf, 8);
-					if (nbytes < 0)
+					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation failed\n");
+					if (hnd)
 					{
-						AIENABLER_LOG_ERROR("[AIENABLER] - Failed to receive (nbytes=%d) from select read\n", nbytes);
-						AIENABLER_ERR;
-						flag = false;
-						break;
-					}
-					memcpy(&status, type_buf, sizeof(lwnl_cb_status));
-					memcpy(&len, type_buf + sizeof(lwnl_cb_status), sizeof(uint32_t));					
-					AIENABLER_LOG_INFO("[AIENABLER] scan state(% d) length(% d)\n", status, len);
-					if (wificonnectionstate(status))
-					{						
-						sleep(5);						
-						AIENABLER_LOG_INFO("[AIENABLER] fetchDataFromCloud\n");					
-						fetchdatafromdacloud();
+						curl_easy_cleanup(hnd);
+						hnd = NULL;
+					}	
+					if (slist1)
+					{
+						curl_slist_free_all(slist1);
+						slist1 = NULL;
 					}					
-				}				
-			}			
+				}
+			}
 		}
 	}
 }

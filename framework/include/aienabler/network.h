@@ -47,7 +47,7 @@
 extern "C"
 {
 #endif
-	void ChkNetwork(void);
+	void NetworkEventNotification(void);
 #ifdef __cplusplus
 }
 #endif

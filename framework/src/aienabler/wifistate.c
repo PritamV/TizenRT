@@ -22,16 +22,17 @@
 
 #include <aienabler/wifistate.h>
 
-bool wificonnectionstate(lwnl_cb_status status )
+void  setwificonnectionstate(lwnl_cb_status status )
 {	
 	if (status == LWNL_STA_CONNECTED)
 	{				
 		AIENABLER_LOG_INFO("[AIENABLER] IP is UP \n");
-		return true;
+		wificonnectionState = true;		
 	}
-	else if(status == LWNL_STA_DISCONNECTED)
+	//else if(status == LWNL_STA_DISCONNECTED)
+	else
 	{				
 		AIENABLER_LOG_INFO("[AIENABLER] IP is DOWN \n");
-		return false;
-	}
+		wificonnectionState = false;		
+	}	
 }

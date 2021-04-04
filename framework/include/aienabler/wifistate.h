@@ -27,11 +27,12 @@
 #include <aienabler/aienabler_log.h>
 #include <tinyara/lwnl/lwnl.h>
 
+bool wificonnectionState = false;
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-	bool wificonnectionstate(lwnl_cb_status);
+	void  setwificonnectionstate(lwnl_cb_status);
 #ifdef __cplusplus
 }
 #endif
