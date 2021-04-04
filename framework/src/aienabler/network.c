@@ -126,7 +126,11 @@ void NetworkEventNotification(void)
 			{
 				if (pthread_cancel(threadfetchCloudData) != 0)
 				{
-					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation failed\n");
+					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation failed\n");										
+				}
+				else
+				{
+					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation success & clean the resources\n");		
 					if (hnd)
 					{
 						curl_easy_cleanup(hnd);
@@ -136,7 +140,7 @@ void NetworkEventNotification(void)
 					{
 						curl_slist_free_all(slist1);
 						slist1 = NULL;
-					}					
+					}
 				}
 			}
 		}
