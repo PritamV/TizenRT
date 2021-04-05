@@ -30,14 +30,15 @@
 #include <curl/curl.h>
 #include <aienabler/aienabler_log.h>
 
-CURL* hnd = NULL;
-struct curl_slist* slist1 = NULL;
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-	void fetchdatafromdacloud(void);
+	void fetchdatafromdacloud(void);	
+	CURL* retCurlHandle(void);
+	struct curl_slist* retCurlslist(void);
+
 #ifdef __cplusplus
 }
 #endif

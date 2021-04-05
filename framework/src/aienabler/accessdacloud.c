@@ -22,12 +22,26 @@
 
 #include <aienabler/accessdacloud.h>
 
+static CURL* hnd = NULL;
+static struct curl_slist* slist1 = NULL;
+
+
+CURL* retCurlHandle(void)
+{
+	return hnd;
+}
+
+struct curl_slist* retCurlslist(void)
+{
+	return slist1;
+}
+
 void fetchdatafromdacloud(void)
 {
 	while (true)
 	{		
 		CURLcode ret;
-		CURL* hnd;
+		//CURL* hnd;
 
 		char* argv[4] = { NULL,"http","get", "google.com" }; // TO do all above will be handle as per open third part APIs
 
@@ -131,6 +145,6 @@ void fetchdatafromdacloud(void)
 				}
 			}
 		}
-		sleep(30);
+		sleep(15);
 	}	
 }

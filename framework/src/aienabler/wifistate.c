@@ -22,6 +22,8 @@
 
 #include <aienabler/wifistate.h>
 
+static bool wificonnectionState = false;
+
 void  setwificonnectionstate(lwnl_cb_status status )
 {	
 	if (status == LWNL_STA_CONNECTED)
@@ -35,4 +37,9 @@ void  setwificonnectionstate(lwnl_cb_status status )
 		AIENABLER_LOG_INFO("[AIENABLER] IP is DOWN \n");
 		wificonnectionState = false;		
 	}	
+}
+
+bool retWiFistate()
+{
+	return wificonnectionState;
 }

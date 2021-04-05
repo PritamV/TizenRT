@@ -49,7 +49,7 @@ void NetworkEventNotification(void)
 	pthread_t threadfetchCloudData;
 	pthread_attr_t attr;
 	struct sched_param sparam;
-	struct input_arg args;
+	//struct input_arg args;
 	int status;
 
 	bool flag = true;
@@ -69,7 +69,7 @@ void NetworkEventNotification(void)
 			lwnl_cb_status status;
 			uint32_t len;
 			char type_buf[8] = { 0, };
-			int nbytes = read(fd, (char*)type_buf, 8);
+			int nbytes = read(listener, (char*)type_buf, 8);
 			if (nbytes < 0)
 			{
 				AIENABLER_LOG_ERROR("[AIENABLER] - Failed to receive (nbytes=%d) from select read\n", nbytes);
@@ -83,7 +83,7 @@ void NetworkEventNotification(void)
 			
 			setwificonnectionstate(status);
 
-			if(wificonnectionState)
+			if(retWiFistate())
 			{
 				sleep(5);
 				AIENABLER_LOG_INFO("[AIENABLER] fetchDataFromCloud\n");				
@@ -109,7 +109,7 @@ void NetworkEventNotification(void)
 				}
 
 				/* 3. set a sched policy */
-				status = pthread_attr_setschedpolicy(&attr, CURL_SCHED_POLICY);
+				status = pthread_attr_setschedpolicy(&attr, AIENABLER_SCHED_POLICY);
 				if (status != 0) 
 				{					
 					AIENABLER_LOG_ERROR("[AIENABLER] - pthread_attr_setschedpolicy failed, status=%d\n", status);
@@ -130,7 +130,11 @@ void NetworkEventNotification(void)
 				}
 				else
 				{
-					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation success & clean the resources\n");		
+					AIENABLER_LOG_ERROR("[AIENABLER] - polling thread cancellation success , so clean the resources\n");		
+					
+					CURL* hnd = retCurlHandle();
+					struct curl_slist* slist1 = retCurlslist();
+
 					if (hnd)
 					{
 						curl_easy_cleanup(hnd);

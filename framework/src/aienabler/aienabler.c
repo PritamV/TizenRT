@@ -24,7 +24,7 @@
 static void aienabler_test(void)	
 {				
 	AIENABLER_LOG_INFO("[AIENABLER] ChkNetwork() \n");
-	ChkNetwork();	
+	NetworkEventNotification();	
 }
 
 int aienabler_init(void)
