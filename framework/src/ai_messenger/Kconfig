@@ -4,12 +4,12 @@
 #
 
 config EXAMPLE_AIENABLER_TEST
-	bool "aienabler test example"
+	bool "ai_messenger test example"
 	default n
 	select ENABLE_CURL
 	---help---
-		Enable the aienabler
+		Enable the ai_messenger
 
 config USER_ENTRYPOINT
 	string
-	default "aienabler_main" if ENTRY_EXAMPLE_AIENABLER_TEST
+	default "ai_messenger_main" if ENTRY_EXAMPLE_AIENABLER_TEST

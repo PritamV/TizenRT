@@ -56,9 +56,9 @@
 #include <tinyara/wifi/wifi_manager.h>
 #endif
 
-#define CONFIG_AIENABLER // TODO this needs to defined at its proper  place
-#ifdef CONFIG_AIENABLER
-#include <aienabler/aienabler.h>
+#define CONFIG_AI_MESSENGER // TODO this needs to defined at its proper  place
+#ifdef CONFIG_AI_MESSENGER
+#include <ai_messenger/ai_messenger.h>
 #endif
 
 /****************************************************************************
@@ -190,10 +190,10 @@ int preapp_start(int argc, char *argv[])
 	(void)wifimgr_run_msghandler();
 #endif
 
-#if defined(CONFIG_AIENABLER)
-       if (aienabler_init() < 0) 
+#if defined(CONFIG_AI_MESSENGER)
+       if (ai_messenger_init() < 0) 
        {
-	   printf("aienabler_init initialization is failed, error %d\n", ret);
+	   printf("ai_messenger initialization is failed, error %d\n", ret);
        }
 
 #endif

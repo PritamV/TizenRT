@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2019 Samsung Electronics All Rights Reserved.
+ * Copyright 2021 Samsung Electronics All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,31 @@
  *
  ****************************************************************************/
 
-/**
- * @file aienabler.h
- * @brief aienabler service functions.
- */
+ /**
+  * @file access_da_cloud.h
+  * @brief DA cloud Server access.
+  */
 
-#ifndef __AIENABLER_H
-#define __AIENABLER_H
+#ifndef _ACCESS_DA_CLOUD_H__
+#define _ACCESS_DA_CLOUD_H__
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <aienabler/aienabler_log.h>
+#include <curl/curl.h>
+#include <ai_messenger/ai_messenger_log.h>
+
 
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 {
 #endif
-	int aienabler_init(void);	
+	void ai_messenger_curl_init(void);
+	void fetch_data_fromd_cloud(void);	
+	void ai_messenger_curl_deinit(void);	
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__AIENABLER_H
+#endif _ACCESS_DA_CLOUD_H__

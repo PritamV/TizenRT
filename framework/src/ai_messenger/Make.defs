@@ -16,9 +16,9 @@
 #
 ###########################################################################
 
-#ifeq ($(CONFIG_AIENABLER), y)
-CSRCS += aienabler.c network.c accessdacloud.c wifistate.c
+#ifeq ($(CONFIG_AI_MESSENGER), y)
+CSRCS += ai_messenger.c access_da_cloud.c
 
-DEPPATH += --dep-path src/aienabler
-VPATH += :src/aienabler
+DEPPATH += --dep-path src/ai_messenger
+VPATH += :src/ai_messenger
 #endifls
