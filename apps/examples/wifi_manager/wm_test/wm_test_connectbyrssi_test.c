@@ -35,6 +35,8 @@ static sem_t g_wm_sem;
 static struct wt_options *g_opt;
 static char g_bssid[20];
 static char g_connected_ap_mac[20];
+int g_rssi_station_connect;
+int g_best_rssi;
 
 #define TAG "[WTCR]"
 #define BSSID_LEN 20
@@ -74,10 +76,20 @@ void _wt_sta_connected(wifi_manager_cb_msg_s msg, void *arg)
 
 	if (WIFI_MANAGER_SUCCESS == msg.res) {
 		WT_LOG(TAG, "Station Connected");
+		g_rssi_station_connect = 0;
 		snprintf(g_connected_ap_mac, sizeof(g_connected_ap_mac), "%02x:%02x:%02x:%02x:%02x:%02x",
 			msg.bssid[0], msg.bssid[1],
 			msg.bssid[2], msg.bssid[3],
 			msg.bssid[4], msg.bssid[5]);
+		wifi_manager_info_s wminfo;
+		wifi_manager_result_e wres = WIFI_MANAGER_SUCCESS;
+		wres = wifi_manager_get_info(&wminfo);
+		if (wres != WIFI_MANAGER_SUCCESS) {
+			WT_LOGE(TAG, "wifi_manager_get_info failed");
+		} else {
+			g_rssi_station_connect = wminfo.rssi;
+			WT_LOG(TAG, "connected_ap_rssi_value_%d", g_rssi_station_connect);
+		}
 	} else {
 		WT_LOGE(TAG, "Station Not Connected");
 	}
@@ -103,11 +115,11 @@ void _wt_scan_done(wifi_manager_cb_msg_s msg, void *arg)
 	 * It will be deleted as soon as you exit this function.
 	 */
 	wifi_manager_scan_info_s *wifi_scan_iter = msg.scanlist;
-	int best_rssi = INT_MIN;
+	g_best_rssi = INT_MIN;
 	while (wifi_scan_iter != NULL) {
 		if (strncmp(wifi_scan_iter->ssid, g_opt->ssid, WIFIMGR_SSID_LEN) == 0) {
-			if (best_rssi < wifi_scan_iter->rssi) {
-				best_rssi = wifi_scan_iter->rssi;
+			if (g_best_rssi < wifi_scan_iter->rssi) {
+				g_best_rssi = wifi_scan_iter->rssi;
 				strncpy(g_bssid, wifi_scan_iter->bssid, strlen(wifi_scan_iter->bssid));
 			}
 		}
@@ -185,8 +197,8 @@ static wifi_manager_result_e _wt_connect(void *arg)
 		return res;
 	}
 	/* Wait for DHCP connection */
-	WT_LOG(TAG, "wait join done");
 	WM_TEST_WAIT;
+	WT_LOG(TAG, "wait join done");
 	WT_LEAVE;
 	return res;
 }
@@ -205,7 +217,6 @@ static void _wt_disconnect()
 	WT_LEAVE;
 }
 
-
 static void wm_run_connect_by_rssi(void *arg)
 {
 	WT_ENTER;
@@ -216,7 +227,7 @@ static void wm_run_connect_by_rssi(void *arg)
 		WT_LOG(TAG, "====== Iteration %d starts ======", i + 1);
 		ret = wm_connect_by_rssi_init();
 		if (ret != WIFI_MANAGER_SUCCESS) {
-			WT_LOGE(TAG, "wm_connect_by_rssi_init failed");
+			WT_LOGE(TAG, "wm_connect_by_rssi_init failed, go for next iteration after 1 sec sleep");
 			failed++;
 			sleep(1); //sleep for 1 sec before next iteration
 			goto next_iteration;
@@ -228,6 +239,7 @@ static void wm_run_connect_by_rssi(void *arg)
 			_wt_scan();
 			if (g_bssid[0] != '\0')
 				break;
+			WT_LOGE(TAG, "Scan failed, retry after 1 sec sleep");
 			// scan till g_bssid get filled or retry count is not got expired
 			sleep(1); // retry after 1 sec sleep
 			retry_count--;
@@ -237,7 +249,7 @@ static void wm_run_connect_by_rssi(void *arg)
 			failed++;
 			ret = wm_connect_by_rssi_deinit();
 			if (ret != WIFI_MANAGER_SUCCESS) {
-				WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed. so exit");
+				WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed, so exit");
 				break;
 			}
 			goto next_iteration;
@@ -250,6 +262,7 @@ static void wm_run_connect_by_rssi(void *arg)
 			_wt_connect(arg);
 			if (g_connected_ap_mac[0] != '\0')
 				break;
+			WT_LOGE(TAG, "Connect ap failed, retry after 1 sec sleep");
 			sleep(1); // retry after 1 sec sleep
 			retry_count--;
 		}
@@ -258,24 +271,31 @@ static void wm_run_connect_by_rssi(void *arg)
 			failed++;
 			ret = wm_connect_by_rssi_deinit();
 			if (ret != WIFI_MANAGER_SUCCESS) {
-				WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed. so exit");
+				WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed, so exit");
 				break;
 			}
 			goto next_iteration;
 		} 
 		WT_LOG(TAG, "Mac with best rssi value in scan for given ssid %s", g_bssid);
 		WT_LOG(TAG, "Connected ap Mac %s", g_connected_ap_mac);
+		WT_LOG(TAG, "best_rssi_scaned_%d_rssi_connected_%d", g_best_rssi, g_rssi_station_connect);
 		if (strncmp(g_bssid, g_connected_ap_mac, BSSID_LEN) == 0) {
 			WT_LOG(TAG, "ap is connected to best rssi for given ssid");
 			passed++;
 		} else {
-			WT_LOG(TAG, "ap is not connected to best rssi for given ssid");
-			failed++;
+			WT_LOG(TAG, "best rssi value changed during scan to station connect");
+			if (g_rssi_station_connect < g_best_rssi) {
+				WT_LOG(TAG, "ap is not connected to best rssi for given ssid");
+				failed++;
+			} else {
+				WT_LOG(TAG, "ap is connected to best rssi for given ssid");
+				passed++;
+			}
 		}
 		_wt_disconnect();
 		ret = wm_connect_by_rssi_deinit();
 		if (ret != WIFI_MANAGER_SUCCESS) {
-			WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed. so exit");
+			WT_LOGE(TAG, "wm_connect_by_rssi_deinit failed, so exit");
 			break;
 		}
 	next_iteration:
